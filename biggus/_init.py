@@ -804,7 +804,7 @@ class NewAxesArray(ArrayContainer):
                     new_size = len(range(*key.indices(1)))
                     if new_size != 1:
                         broadcast_dict[key_index] = new_size
-                elif isinstance(key, tuple):
+                elif isinstance(key, tuple, np.ndarray):
                     for index in key:
                         if not -1 <= index < 1:
                             raise IndexError('index {} is out of bounds for '
@@ -1519,7 +1519,9 @@ class NumpyArrayAdapter(_ArrayAdapter):
             for i, key in tuple_keys:
                 array = np.take(array, key, axis=dimensions[i])
         else:
-            array = self.concrete.__getitem__(keys)
+            np_keys = tuple(np.array(key) if isinstance(key, tuple) else key
+                            for key in keys)
+            array = self.concrete.__getitem__(np_keys)
         return array
 
 
@@ -1776,7 +1778,8 @@ class ArrayStack(Array):
 
     def _getitem_full_keys(self, keys):
         stack_ndim = self._stack.ndim
-        stack_keys = keys[:stack_ndim]
+        stack_keys = tuple(np.array(key) if isinstance(key, tuple) else key
+                           for key in keys[:stack_ndim])
         item_keys = keys[stack_ndim:]
 
         stack_shape = _sliced_shape(self._stack.shape, stack_keys)
